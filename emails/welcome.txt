@@ -1,0 +1,6 @@
+You're in: #{{position}}
+
+Your email is confirmed. You are number {{position}} on the waitlist.
+
+Each friend who confirms through your link moves you up the queue:
+{{referral_url}}

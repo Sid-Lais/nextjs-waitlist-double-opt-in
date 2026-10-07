@@ -1,0 +1,7 @@
+Confirm your spot
+
+Open this link to confirm your email and join the waitlist. It works once and expires in 48 hours:
+
+{{confirm_url}}
+
+If you didn't sign up, ignore this email.

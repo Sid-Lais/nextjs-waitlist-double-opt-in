@@ -1,0 +1,16 @@
+:root { color-scheme: light dark; --fg: #111; --bg: #fff; --muted: #666; --accent: #2b59ff; --border: #ddd; }
+@media (prefers-color-scheme: dark) { :root { --fg: #eee; --bg: #121212; --muted: #999; --border: #333; } }
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg); }
+main { max-width: 32rem; margin: 0 auto; padding: 4rem 1.25rem; }
+h1 { font-size: 2.1rem; line-height: 1.15; margin: 0 0 .75rem; }
+p { color: var(--muted); }
+form { display: flex; gap: .5rem; margin: 1.5rem 0 .5rem; flex-wrap: wrap; }
+input[type=email] { flex: 1 1 14rem; padding: .7rem .8rem; font: inherit; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: inherit; }
+button { padding: .7rem 1.1rem; font: inherit; font-weight: 600; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
+button:disabled { opacity: .6; cursor: wait; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.msg { min-height: 1.5rem; margin: 0; }
+.err { color: #d33; }
+.big { font-size: 3rem; font-weight: 700; color: var(--fg); margin: .5rem 0; }
+code { background: var(--border); padding: .15rem .4rem; border-radius: 4px; word-break: break-all; }

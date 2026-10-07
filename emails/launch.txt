@@ -1,0 +1,8 @@
+We're live
+
+The wait is over. Thanks for being #{{position}} in line.
+
+{{referral_url}}
+
+You're getting this because you joined and confirmed our waitlist.
+Unsubscribe: __unsubscribe_url__
