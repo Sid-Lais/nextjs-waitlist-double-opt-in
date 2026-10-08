@@ -3,3 +3,5 @@ You moved up to #{{position}}
 A friend confirmed through your link. You moved up {{places}} places, from #{{previous_position}} to #{{position}}.
 
 Keep sharing: {{referral_url}}
+
+Sent by {{product_name}}. {{postal_address}}

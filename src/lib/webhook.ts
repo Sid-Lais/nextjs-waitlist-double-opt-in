@@ -13,9 +13,30 @@ export type WebhookResult =
 const FIELD_BY_EVENT = {
   unsubscribe: "unsubscribedAt",
   bounce: "bouncedAt",
-  spam_complaint: "spamAt",
+  // the payload says "spam", the Webhooks API filter calls it "spam_complaint"
   spam: "spamAt",
+  spam_complaint: "spamAt",
 } as const;
+
+/** Accepts the JSON format ({"events": [...]}) and the JSON Lines format (one event per line). */
+function parseEvents(raw: string): MailtrapEvent[] | null {
+  const docs: unknown[] = [];
+  try {
+    docs.push(JSON.parse(raw));
+  } catch {
+    try {
+      for (const line of raw.split(/\r?\n/)) if (line.trim()) docs.push(JSON.parse(line));
+    } catch {
+      return null;
+    }
+  }
+  if (docs.length === 0) return null;
+  return docs.flatMap((d) =>
+    Array.isArray((d as { events?: unknown })?.events)
+      ? (d as { events: MailtrapEvent[] }).events
+      : [d as MailtrapEvent],
+  );
+}
 
 export function handleWebhook(
   db: Db,
@@ -29,13 +50,8 @@ export function handleWebhook(
     return { status: 401, error: "bad signature" };
   }
 
-  let events: MailtrapEvent[];
-  try {
-    const body = JSON.parse(rawBody);
-    events = Array.isArray(body?.events) ? body.events : [body];
-  } catch {
-    return { status: 400, error: "invalid JSON" };
-  }
+  const events = parseEvents(rawBody);
+  if (!events) return { status: 400, error: "invalid payload" };
 
   let processed = 0;
   let duplicates = 0;
@@ -54,7 +70,10 @@ export function handleWebhook(
         duplicates++;
         continue;
       }
-      tx.update(users).set({ [field]: now }).where(eq(users.email, normalizeEmail(e.email))).run();
+      tx.update(users)
+        .set({ [field]: now })
+        .where(eq(users.email, normalizeEmail(e.email)))
+        .run();
       processed++;
     }
   });

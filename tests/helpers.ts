@@ -31,7 +31,14 @@ export function makeCtx(overrides: { bump?: number } = {}) {
   const ctx: Ctx = {
     db: openDb(":memory:"),
     mailer,
-    config: { appUrl: "https://example.test", referralBumpPlaces: overrides.bump ?? 3, webhookSecret: "s3cret" },
+    config: {
+      appUrl: "https://example.test",
+      launchUrl: "https://example.test/launch",
+      productName: "Acme",
+      postalAddress: "1 Main St",
+      referralBumpPlaces: overrides.bump ?? 3,
+      webhookSecret: "s3cret",
+    },
     now: () => clock.t,
   };
   return { ctx, mailer, clock };

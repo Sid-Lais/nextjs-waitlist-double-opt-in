@@ -19,7 +19,12 @@ describe("queue positions", () => {
     await join(ctx, mailer, "new@x.co", e.referralCode!);
     // e was #5, moves to #2. b, c, d shift down. a stays. new joins at the end.
     expect(positions(ctx)).toEqual({
-      "a@x.co": 1, "e@x.co": 2, "b@x.co": 3, "c@x.co": 4, "d@x.co": 5, "new@x.co": 6,
+      "a@x.co": 1,
+      "e@x.co": 2,
+      "b@x.co": 3,
+      "c@x.co": 4,
+      "d@x.co": 5,
+      "new@x.co": 6,
     });
   });
 
@@ -37,7 +42,11 @@ describe("queue positions", () => {
     const b = await join(ctx, mailer, "b@x.co");
     await join(ctx, mailer, "c@x.co", b.referralCode!);
     expect(positions(ctx)).toMatchObject({ "b@x.co": 1, "a@x.co": 2, "c@x.co": 3 });
-    expect(mailer.sentTo("moved_up", "b@x.co")[0].variables).toMatchObject({ previous_position: 2, position: 1, places: 1 });
+    expect(mailer.sentTo("moved_up", "b@x.co")[0].variables).toMatchObject({
+      previous_position: 2,
+      position: 1,
+      places: 1,
+    });
   });
 
   it("only credits a referral on confirmation, once", async () => {
@@ -66,6 +75,8 @@ describe("queue positions", () => {
     const { ctx, mailer } = makeCtx();
     const a = await join(ctx, mailer, "a@x.co");
     expect(mailer.sentTo("welcome", "a@x.co")[0].variables).toEqual({
+      product_name: "Acme",
+      postal_address: "1 Main St",
       position: 1,
       referral_code: a.referralCode,
       referral_url: `https://example.test/?ref=${a.referralCode}`,

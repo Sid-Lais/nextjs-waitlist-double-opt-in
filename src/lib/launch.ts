@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, isNull, or } from "drizzle-orm";
+import { baseVariables } from "./config";
 import { users } from "./db/schema";
 import { AmbiguousError, MAX_BATCH, RejectedError } from "./mailer";
 import { type Ctx, type User, referralUrl } from "./waitlist";
@@ -12,7 +13,13 @@ export type LaunchOptions = {
 
 export type LaunchReport = {
   confirmed: number;
-  skipped: { unsubscribed: number; bounced: number; spam: number; alreadySent: number; unknownOutcome: number };
+  skipped: {
+    unsubscribed: number;
+    bounced: number;
+    spam: number;
+    alreadySent: number;
+    unknownOutcome: number;
+  };
   eligible: number;
   chunks: number;
   sent: number;
@@ -75,7 +82,10 @@ export async function runLaunch(ctx: Ctx, opts: LaunchOptions = {}): Promise<Lau
             isNull(users.unsubscribedAt),
             isNull(users.bouncedAt),
             isNull(users.spamAt),
-            or(isNull(users.launchStatus), inArray(users.launchStatus, retryStatuses as ("failed" | "sending")[])),
+            or(
+              isNull(users.launchStatus),
+              inArray(users.launchStatus, retryStatuses as ("failed" | "sending")[]),
+            ),
           ),
         )
         .orderBy(asc(users.position))
@@ -83,7 +93,12 @@ export async function runLaunch(ctx: Ctx, opts: LaunchOptions = {}): Promise<Lau
       if (rows.length) {
         tx.update(users)
           .set({ launchStatus: "sending", launchAttemptedAt: now, launchError: null })
-          .where(inArray(users.id, rows.map((r) => r.id)))
+          .where(
+            inArray(
+              users.id,
+              rows.map((r) => r.id),
+            ),
+          )
           .run();
       }
       return rows;
@@ -96,6 +111,8 @@ export async function runLaunch(ctx: Ctx, opts: LaunchOptions = {}): Promise<Lau
         batch.map((u) => ({
           to: u.email,
           variables: {
+            ...baseVariables(ctx.config),
+            launch_url: ctx.config.launchUrl,
             position: u.position!,
             referral_code: u.referralCode!,
             referral_url: referralUrl(ctx, u.referralCode!),
@@ -106,7 +123,11 @@ export async function runLaunch(ctx: Ctx, opts: LaunchOptions = {}): Promise<Lau
       const message = err instanceof Error ? err.message : String(err);
       const batchIds = batch.map((u) => u.id);
       if (err instanceof RejectedError) {
-        ctx.db.update(users).set({ launchStatus: "failed", launchError: message }).where(inArray(users.id, batchIds)).run();
+        ctx.db
+          .update(users)
+          .set({ launchStatus: "failed", launchError: message })
+          .where(inArray(users.id, batchIds))
+          .run();
         report.failed += batch.length;
         continue;
       }
@@ -121,10 +142,16 @@ export async function runLaunch(ctx: Ctx, opts: LaunchOptions = {}): Promise<Lau
       batch.forEach((u, idx) => {
         const r = results[idx];
         if (r.ok) {
-          tx.update(users).set({ launchStatus: "sent", launchMessageId: r.messageId, launchError: null }).where(eq(users.id, u.id)).run();
+          tx.update(users)
+            .set({ launchStatus: "sent", launchMessageId: r.messageId, launchError: null })
+            .where(eq(users.id, u.id))
+            .run();
           report.sent++;
         } else {
-          tx.update(users).set({ launchStatus: "failed", launchError: r.error }).where(eq(users.id, u.id)).run();
+          tx.update(users)
+            .set({ launchStatus: "failed", launchError: r.error })
+            .where(eq(users.id, u.id))
+            .run();
           report.failed++;
         }
       });

@@ -3,7 +3,9 @@
 import { useState } from "react";
 
 export function WaitlistForm({ refCode }: { refCode?: string }) {
-  const [state, setState] = useState<{ kind: "idle" | "busy" | "done" | "error"; text?: string }>({ kind: "idle" });
+  const [state, setState] = useState<{ kind: "idle" | "busy" | "done" | "error"; text?: string }>({
+    kind: "idle",
+  });
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -13,7 +15,11 @@ export function WaitlistForm({ refCode }: { refCode?: string }) {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: data.get("email"), website: data.get("website"), ref: refCode }),
+        body: JSON.stringify({
+          email: data.get("email"),
+          website: data.get("website"),
+          ref: refCode,
+        }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.ok) setState({ kind: "done" });
@@ -24,13 +30,24 @@ export function WaitlistForm({ refCode }: { refCode?: string }) {
   }
 
   if (state.kind === "done") {
-    return <p className="msg">Check your inbox and click the link to confirm your spot. It expires in 48 hours.</p>;
+    return (
+      <p className="msg">
+        Check your inbox and click the link to confirm your spot. It expires in 48 hours.
+      </p>
+    );
   }
 
   return (
     <>
       <form onSubmit={onSubmit} noValidate>
-        <input type="email" name="email" placeholder="you@example.com" autoComplete="email" required aria-label="Email address" />
+        <input
+          type="email"
+          name="email"
+          placeholder="you@example.com"
+          autoComplete="email"
+          required
+          aria-label="Email address"
+        />
         <div className="hp" aria-hidden="true">
           <label>
             Website

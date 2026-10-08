@@ -1,8 +1,13 @@
-We're live
+{{product_name}} is live
 
-The wait is over. Thanks for being #{{position}} in line.
+The wait is over. You joined the {{product_name}} waitlist and were number {{position}} in line, so you are among the first to know.
 
+Open {{product_name}}: {{launch_url}}
+
+Know someone who would like it? Share your invite link:
 {{referral_url}}
 
-You're getting this because you joined and confirmed our waitlist.
+You are receiving this one-time announcement because you signed up for the {{product_name}} waitlist and confirmed your email.
+
+Sent by {{product_name}}. {{postal_address}}
 Unsubscribe: __unsubscribe_url__

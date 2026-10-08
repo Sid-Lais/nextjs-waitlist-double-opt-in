@@ -6,4 +6,3 @@ next-env.d.ts
 .env.local
 data/
 .vercel
-e2e.log

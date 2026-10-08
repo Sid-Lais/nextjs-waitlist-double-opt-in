@@ -9,9 +9,12 @@ describe("signup validation", () => {
     expect(normalizeEmail("ａnn@example.com")).toBe("ann@example.com");
   });
 
-  it.each(["", "nope", "a@", "@b.com", "a b@c.com", "a@b", `${"x".repeat(250)}@b.com`])("rejects %j", (email) => {
-    expect(signupSchema.safeParse({ email }).success).toBe(false);
-  });
+  it.each(["", "nope", "a@", "@b.com", "a b@c.com", "a@b", `${"x".repeat(250)}@b.com`])(
+    "rejects %j",
+    (email) => {
+      expect(signupSchema.safeParse({ email }).success).toBe(false);
+    },
+  );
 
   it("rejects a missing or non-string email", () => {
     expect(signupSchema.safeParse({}).success).toBe(false);
@@ -24,6 +27,8 @@ describe("signup validation", () => {
   });
 
   it("passes the honeypot field through so the route can detect it", () => {
-    expect(signupSchema.parse({ email: "a@b.co", website: "http://spam" }).website).toBe("http://spam");
+    expect(signupSchema.parse({ email: "a@b.co", website: "http://spam" }).website).toBe(
+      "http://spam",
+    );
   });
 });

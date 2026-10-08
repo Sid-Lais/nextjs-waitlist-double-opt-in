@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const clients: { config: Record<string, unknown>; send: ReturnType<typeof vi.fn>; batchSend: ReturnType<typeof vi.fn> }[] = [];
+const clients: {
+  config: Record<string, unknown>;
+  send: ReturnType<typeof vi.fn>;
+  batchSend: ReturnType<typeof vi.fn>;
+}[] = [];
 
 vi.mock("mailtrap", () => ({
   MailtrapClient: class {
@@ -37,20 +41,37 @@ describe("streams", () => {
     expect(bulk.config.bulk).toBe(true);
 
     await mailer.sendTransactional({ kind: "welcome", to: "a@x.co", variables: { position: 1 } });
-    expect(transactional.send).toHaveBeenCalledWith(expect.objectContaining({ template_uuid: "tpl-welcome", to: [{ email: "a@x.co" }] }));
+    expect(transactional.send).toHaveBeenCalledWith(
+      expect.objectContaining({ template_uuid: "tpl-welcome", to: [{ email: "a@x.co" }] }),
+    );
     expect(bulk.send).not.toHaveBeenCalled();
 
-    bulk.batchSend.mockResolvedValue({ success: true, responses: [{ success: true, message_ids: ["m1"] }] });
+    bulk.batchSend.mockResolvedValue({
+      success: true,
+      responses: [{ success: true, message_ids: ["m1"] }],
+    });
     await mailer.sendBulk([msg("a@x.co")]);
     expect(bulk.batchSend).toHaveBeenCalledTimes(1);
     expect(bulk.batchSend.mock.calls[0][0].base.template_uuid).toBe("tpl-launch");
     expect(transactional.batchSend).not.toHaveBeenCalled();
   });
+});
 
-  it("uses the Email Testing endpoint for both when a test inbox is configured", () => {
-    createMailtrapMailer({ ...env, MAILTRAP_TEST_INBOX_ID: "42", MAILTRAP_ACCOUNT_ID: "7" });
-    for (const c of clients) expect(c.config).toMatchObject({ sandbox: true, testInboxId: 42, accountId: 7 });
-    expect(clients[1].config.bulk).toBeUndefined();
+describe("sender", () => {
+  it("sends the launch email from the bulk address when one is set, everything else from the main one", async () => {
+    const mailer = createMailtrapMailer({
+      ...env,
+      MAILTRAP_BULK_FROM_EMAIL: "hi@news.example.com",
+    } as NodeJS.ProcessEnv);
+    const [transactional, bulk] = clients;
+    bulk.batchSend.mockResolvedValue({
+      success: true,
+      responses: [{ success: true, message_ids: ["m1"] }],
+    });
+    await mailer.sendTransactional({ kind: "confirm", to: "a@x.co", variables: {} });
+    await mailer.sendBulk([msg("a@x.co")]);
+    expect(transactional.send.mock.calls[0][0].from.email).toBe("hi@example.com");
+    expect(bulk.batchSend.mock.calls[0][0].base.from.email).toBe("hi@news.example.com");
   });
 });
 
@@ -59,7 +80,10 @@ describe("bulk results", () => {
     const mailer = createMailtrapMailer(env);
     clients[1].batchSend.mockResolvedValue({
       success: false,
-      responses: [{ success: true, message_ids: ["m1"] }, { success: false, errors: ["bad address"] }],
+      responses: [
+        { success: true, message_ids: ["m1"] },
+        { success: false, errors: ["bad address"] },
+      ],
     });
     expect(await mailer.sendBulk([msg("a@x.co"), msg("b@x.co")])).toEqual([
       { ok: true, messageId: "m1" },
@@ -69,8 +93,13 @@ describe("bulk results", () => {
 
   it("treats a response count mismatch as unknown outcome", async () => {
     const mailer = createMailtrapMailer(env);
-    clients[1].batchSend.mockResolvedValue({ success: true, responses: [{ success: true, message_ids: ["m1"] }] });
-    await expect(mailer.sendBulk([msg("a@x.co"), msg("b@x.co")])).rejects.toBeInstanceOf(AmbiguousError);
+    clients[1].batchSend.mockResolvedValue({
+      success: true,
+      responses: [{ success: true, message_ids: ["m1"] }],
+    });
+    await expect(mailer.sendBulk([msg("a@x.co"), msg("b@x.co")])).rejects.toBeInstanceOf(
+      AmbiguousError,
+    );
   });
 
   it.each([
@@ -81,13 +110,17 @@ describe("bulk results", () => {
     [undefined, AmbiguousError],
   ])("classifies HTTP %s", async (status, cls) => {
     const mailer = createMailtrapMailer(env);
-    clients[1].batchSend.mockRejectedValue(Object.assign(new Error("x"), { cause: { response: { status } } }));
+    clients[1].batchSend.mockRejectedValue(
+      Object.assign(new Error("x"), { cause: { response: { status } } }),
+    );
     await expect(mailer.sendBulk([msg("a@x.co")])).rejects.toBeInstanceOf(cls);
   });
 
   it("refuses more than 500 messages in one request", async () => {
     const mailer = createMailtrapMailer(env);
-    await expect(mailer.sendBulk(Array.from({ length: 501 }, (_, i) => msg(`u${i}@x.co`)))).rejects.toThrow(/exceeds 500/);
+    await expect(
+      mailer.sendBulk(Array.from({ length: 501 }, (_, i) => msg(`u${i}@x.co`))),
+    ).rejects.toThrow(/exceeds 500/);
     expect(clients[1].batchSend).not.toHaveBeenCalled();
   });
 });

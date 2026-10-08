@@ -21,9 +21,6 @@ export interface Mailer {
 }
 
 export const MAX_BATCH = 500;
-const SANDBOX_GAP_MS = 15_000;
-// On globalThis: the app builds a mailer per request and each route gets its own module copy.
-const pacing = globalThis as unknown as { __mailtrapNextSlot?: number };
 
 function classify(err: unknown): Error {
   const cause = (err as { cause?: { response?: { status?: number } } })?.cause;
@@ -36,34 +33,20 @@ function classify(err: unknown): Error {
 export function createMailtrapMailer(env: NodeJS.ProcessEnv = process.env): Mailer {
   const token = requireEnv("MAILTRAP_API_TOKEN", env);
   const from = { email: requireEnv("MAILTRAP_FROM_EMAIL", env), name: env.MAILTRAP_FROM_NAME };
+  // Bulk can use its own address, ideally on a separate subdomain (see README).
+  const bulkFrom = { email: env.MAILTRAP_BULK_FROM_EMAIL || from.email, name: from.name };
   const templates: Record<string, string> = {
     confirm: requireEnv("MAILTRAP_TEMPLATE_CONFIRM", env),
     welcome: requireEnv("MAILTRAP_TEMPLATE_WELCOME", env),
     moved_up: requireEnv("MAILTRAP_TEMPLATE_MOVED_UP", env),
     launch: requireEnv("MAILTRAP_TEMPLATE_LAUNCH", env),
   };
-  // Optional: route everything to an Email Testing inbox instead of real recipients.
-  // The sandbox API has no bulk host, so both clients use the sandbox endpoint there.
-  const inboxId = Number(env.MAILTRAP_TEST_INBOX_ID) || undefined;
-  const sandbox = inboxId
-    ? { sandbox: true, testInboxId: inboxId, accountId: Number(env.MAILTRAP_ACCOUNT_ID) || undefined }
-    : null;
-  const transactional = new MailtrapClient({ token, ...sandbox });
-  const bulk = new MailtrapClient({ token, ...(sandbox ?? { bulk: true }) });
-
-  // The free Email Testing plan rejects bursts of more than about 1 email per 10 s, so space sends out there.
-  async function pace() {
-    if (!sandbox) return;
-    const at = Math.max(Date.now(), pacing.__mailtrapNextSlot ?? 0);
-    pacing.__mailtrapNextSlot = at + SANDBOX_GAP_MS;
-    const { promise, resolve } = Promise.withResolvers<void>();
-    setTimeout(resolve, Math.max(0, at - Date.now()));
-    await promise;
-  }
+  // Same token for both streams, only the host differs (send.api vs bulk.api).
+  const transactional = new MailtrapClient({ token });
+  const bulk = new MailtrapClient({ token, bulk: true });
 
   return {
     async sendTransactional({ kind, to, variables }) {
-      await pace();
       await transactional.send({
         from,
         to: [{ email: to }],
@@ -76,15 +59,15 @@ export function createMailtrapMailer(env: NodeJS.ProcessEnv = process.env): Mail
       if (msgs.length === 0) return [];
       if (msgs.length > MAX_BATCH) throw new Error(`Batch of ${msgs.length} exceeds ${MAX_BATCH}`);
       let res;
-      await pace();
       try {
         res = await bulk.batchSend({
-          base: { from, template_uuid: templates.launch },
+          base: { from: bulkFrom, template_uuid: templates.launch },
           requests: msgs.map((m) => ({ to: [{ email: m.to }], template_variables: m.variables })),
         });
       } catch (err) {
         throw classify(err);
       }
+      // One response per request, in order. The HTTP call can succeed while single messages fail.
       if (!Array.isArray(res.responses) || res.responses.length !== msgs.length) {
         throw new AmbiguousError(
           `Expected ${msgs.length} responses, got ${res.responses?.length ?? "none"}`,

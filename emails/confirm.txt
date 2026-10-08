@@ -5,3 +5,5 @@ Open this link to confirm your email and join the waitlist. It works once and ex
 {{confirm_url}}
 
 If you didn't sign up, ignore this email.
+
+Sent by {{product_name}}. {{postal_address}}

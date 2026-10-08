@@ -1,7 +1,7 @@
 import { and, eq, gte, lt, max, sql } from "drizzle-orm";
 import type { Db } from "./db";
 import { users } from "./db/schema";
-import type { Config } from "./config";
+import { baseVariables, type Config } from "./config";
 import type { Mailer } from "./mailer";
 import { RESEND_COOLDOWN_MS, TOKEN_TTL_MS, hashToken, newReferralCode, newToken } from "./tokens";
 
@@ -53,7 +53,10 @@ async function issueConfirmation(ctx: Ctx, userId: number): Promise<"sent" | "sk
     await ctx.mailer.sendTransactional({
       kind: "confirm",
       to: claimed.email,
-      variables: { confirm_url: `${ctx.config.appUrl}/confirm?token=${token}` },
+      variables: {
+        ...baseVariables(ctx.config),
+        confirm_url: `${ctx.config.appUrl}/confirm?token=${token}`,
+      },
     });
   } catch (err) {
     // release the cooldown so the user can retry right away
@@ -91,17 +94,25 @@ export async function signup(
 }
 
 export async function resendByToken(ctx: Ctx, token: string): Promise<"sent" | "skipped"> {
-  const u = ctx.db.select().from(users).where(eq(users.tokenHash, hashToken(token))).get();
+  const u = ctx.db
+    .select()
+    .from(users)
+    .where(eq(users.tokenHash, hashToken(token)))
+    .get();
   if (!u || u.status !== "pending") return "skipped";
   return issueConfirmation(ctx, u.id);
 }
 
 export type ConfirmResult =
-  | { kind: "confirmed"; user: User }
-  | { kind: "expired" | "used" | "invalid" };
+  { kind: "confirmed"; user: User } | { kind: "expired" | "used" | "invalid" };
 
 /** Moves `userId` up by `places`, shifting the people in between down by one. Returns places actually moved. */
-export function moveUp(db: Pick<Db, "update">, userId: number, from: number, places: number): number {
+export function moveUp(
+  db: Pick<Db, "update">,
+  userId: number,
+  from: number,
+  places: number,
+): number {
   const to = Math.max(1, from - places);
   if (to === from) return 0;
   db.update(users)
@@ -122,7 +133,11 @@ export async function confirm(ctx: Ctx, token: string): Promise<ConfirmResult> {
     if (u.status === "confirmed" || u.tokenUsedAt) return { kind: "used" } as const;
     if (!u.tokenExpiresAt || u.tokenExpiresAt <= now) return { kind: "expired" } as const;
 
-    const last = tx.select({ m: max(users.position) }).from(users).where(eq(users.status, "confirmed")).get();
+    const last = tx
+      .select({ m: max(users.position) })
+      .from(users)
+      .where(eq(users.status, "confirmed"))
+      .get();
     tx.update(users)
       .set({
         status: "confirmed",
@@ -159,6 +174,7 @@ export async function confirm(ctx: Ctx, token: string): Promise<ConfirmResult> {
       kind: "welcome",
       to: user.email,
       variables: {
+        ...baseVariables(ctx.config),
         position: user.position!,
         referral_code: user.referralCode!,
         referral_url: referralUrl(ctx, user.referralCode!),
@@ -193,6 +209,7 @@ async function notifyMovedUp(ctx: Ctx, userId: number, previous: number, places:
       kind: "moved_up",
       to: claimed.email,
       variables: {
+        ...baseVariables(ctx.config),
         position: fresh.position!,
         previous_position: previous,
         places,
@@ -200,7 +217,11 @@ async function notifyMovedUp(ctx: Ctx, userId: number, previous: number, places:
       },
     });
   } catch (err) {
-    ctx.db.update(users).set({ movedUpEmailAt: claimed.movedUpEmailAt }).where(eq(users.id, userId)).run();
+    ctx.db
+      .update(users)
+      .set({ movedUpEmailAt: claimed.movedUpEmailAt })
+      .where(eq(users.id, userId))
+      .run();
     ctx.log?.("moved-up email failed", err);
   }
 }

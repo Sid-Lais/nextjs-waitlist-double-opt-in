@@ -1,0 +1,8 @@
+.next
+node_modules
+data
+drizzle
+emails
+package-lock.json
+next-env.d.ts
+docs/*.png

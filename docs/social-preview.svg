@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1640"/>
+      <stop offset="1" stop-color="#3a2a85"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.8" cy="0.2" r="0.6">
+      <stop offset="0" stop-color="#7a63ff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#7a63ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#glow)"/>
+  <g font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="80" y="150" font-size="26" font-weight="600" letter-spacing="4" fill="#9a8cff">NEXT.JS 15 STARTER</text>
+    <text x="80" y="270" font-size="68" font-weight="800" fill="#ffffff">Next.js Waitlist with</text>
+    <text x="80" y="350" font-size="68" font-weight="800" fill="#ffffff">Double Opt-In, Referrals</text>
+    <text x="80" y="430" font-size="68" font-weight="800" fill="#ffffff">and Launch Email</text>
+    <text x="80" y="500" font-size="30" fill="#5ee0b0">Mailtrap Email API</text>
+    <text x="80" y="570" font-size="24" fill="#cfc9f5">TypeScript, Drizzle, SQLite. Transactional and Bulk streams.</text>
+  </g>
+</svg>

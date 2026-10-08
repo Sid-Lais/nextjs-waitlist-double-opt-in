@@ -15,7 +15,8 @@
     "launch": "tsx scripts/launch.ts",
     "templates:sync": "tsx scripts/sync-templates.ts",
     "webhook:test": "tsx scripts/test-webhook.ts",
-    "e2e": "tsx scripts/e2e.ts"
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "license": "MIT",
   "dependencies": {
@@ -36,6 +37,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
     "eslint-config-next": "^15.5.27",
+    "prettier": "^3.9.9",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vitest": "^5.0.3"
