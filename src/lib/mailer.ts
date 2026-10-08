@@ -21,6 +21,9 @@ export interface Mailer {
 }
 
 export const MAX_BATCH = 500;
+const SANDBOX_GAP_MS = 15_000;
+// On globalThis: the app builds a mailer per request and each route gets its own module copy.
+const pacing = globalThis as unknown as { __mailtrapNextSlot?: number };
 
 function classify(err: unknown): Error {
   const cause = (err as { cause?: { response?: { status?: number } } })?.cause;
@@ -39,11 +42,28 @@ export function createMailtrapMailer(env: NodeJS.ProcessEnv = process.env): Mail
     moved_up: requireEnv("MAILTRAP_TEMPLATE_MOVED_UP", env),
     launch: requireEnv("MAILTRAP_TEMPLATE_LAUNCH", env),
   };
-  const transactional = new MailtrapClient({ token });
-  const bulk = new MailtrapClient({ token, bulk: true });
+  // Optional: route everything to an Email Testing inbox instead of real recipients.
+  // The sandbox API has no bulk host, so both clients use the sandbox endpoint there.
+  const inboxId = Number(env.MAILTRAP_TEST_INBOX_ID) || undefined;
+  const sandbox = inboxId
+    ? { sandbox: true, testInboxId: inboxId, accountId: Number(env.MAILTRAP_ACCOUNT_ID) || undefined }
+    : null;
+  const transactional = new MailtrapClient({ token, ...sandbox });
+  const bulk = new MailtrapClient({ token, ...(sandbox ?? { bulk: true }) });
+
+  // The free Email Testing plan rejects bursts of more than about 1 email per 10 s, so space sends out there.
+  async function pace() {
+    if (!sandbox) return;
+    const at = Math.max(Date.now(), pacing.__mailtrapNextSlot ?? 0);
+    pacing.__mailtrapNextSlot = at + SANDBOX_GAP_MS;
+    const { promise, resolve } = Promise.withResolvers<void>();
+    setTimeout(resolve, Math.max(0, at - Date.now()));
+    await promise;
+  }
 
   return {
     async sendTransactional({ kind, to, variables }) {
+      await pace();
       await transactional.send({
         from,
         to: [{ email: to }],
@@ -56,6 +76,7 @@ export function createMailtrapMailer(env: NodeJS.ProcessEnv = process.env): Mail
       if (msgs.length === 0) return [];
       if (msgs.length > MAX_BATCH) throw new Error(`Batch of ${msgs.length} exceeds ${MAX_BATCH}`);
       let res;
+      await pace();
       try {
         res = await bulk.batchSend({
           base: { from, template_uuid: templates.launch },

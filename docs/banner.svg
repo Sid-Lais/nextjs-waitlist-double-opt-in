@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="Next.js waitlist with double opt-in, referrals and a bulk launch email">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1640"/>
+      <stop offset="1" stop-color="#3a2a85"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9a8cff"/>
+      <stop offset="1" stop-color="#5ee0b0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.45" r="0.55">
+      <stop offset="0" stop-color="#7a63ff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#7a63ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="320" fill="url(#bg)"/>
+  <rect width="1280" height="320" fill="url(#glow)"/>
+
+  <g font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="72" y="118" font-size="20" font-weight="600" letter-spacing="3" fill="#9a8cff">NEXT.JS 15 STARTER</text>
+    <text x="72" y="178" font-size="46" font-weight="800" fill="#ffffff">Waitlist with Double Opt-In</text>
+    <text x="72" y="222" font-size="22" fill="#cfc9f5">Referral queue. Bulk launch email. One-click unsubscribe.</text>
+
+    <g font-size="14" font-weight="600" fill="#e8e5ff">
+      <rect x="72" y="248" width="82" height="30" rx="15" fill="#ffffff" fill-opacity="0.12"/>
+      <text x="113" y="268" text-anchor="middle">Next.js</text>
+      <rect x="164" y="248" width="104" height="30" rx="15" fill="#ffffff" fill-opacity="0.12"/>
+      <text x="216" y="268" text-anchor="middle">TypeScript</text>
+      <rect x="278" y="248" width="82" height="30" rx="15" fill="#ffffff" fill-opacity="0.12"/>
+      <text x="319" y="268" text-anchor="middle">Drizzle</text>
+      <rect x="370" y="248" width="82" height="30" rx="15" fill="#ffffff" fill-opacity="0.12"/>
+      <text x="411" y="268" text-anchor="middle">SQLite</text>
+      <rect x="462" y="248" width="150" height="30" rx="15" fill="#5ee0b0" fill-opacity="0.18"/>
+      <text x="537" y="268" text-anchor="middle" fill="#8ff0cc">Email API</text>
+    </g>
+  </g>
+
+  <!-- queue illustration -->
+  <g transform="translate(830 52)">
+    <rect x="0" y="0" width="390" height="216" rx="20" fill="#120e30" fill-opacity="0.55" stroke="#9a8cff" stroke-opacity="0.35"/>
+
+    <g font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">
+      <!-- row 1: referrer moved up -->
+      <rect x="24" y="24" width="342" height="44" rx="12" fill="url(#accent)" fill-opacity="0.22" stroke="#5ee0b0" stroke-opacity="0.7"/>
+      <circle cx="52" cy="46" r="14" fill="#5ee0b0"/>
+      <text x="52" y="51" text-anchor="middle" fill="#0f2a22">2</text>
+      <rect x="78" y="40" width="150" height="12" rx="6" fill="#e8e5ff" fill-opacity="0.85"/>
+      <path d="M322 52 L334 38 L346 52" fill="none" stroke="#5ee0b0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="298" y="51" text-anchor="end" fill="#8ff0cc">+3</text>
+
+      <!-- row 2 -->
+      <rect x="24" y="80" width="342" height="44" rx="12" fill="#ffffff" fill-opacity="0.07"/>
+      <circle cx="52" cy="102" r="14" fill="#9a8cff" fill-opacity="0.5"/>
+      <text x="52" y="107" text-anchor="middle" fill="#ffffff">3</text>
+      <rect x="78" y="96" width="120" height="12" rx="6" fill="#e8e5ff" fill-opacity="0.45"/>
+
+      <!-- row 3 -->
+      <rect x="24" y="136" width="342" height="44" rx="12" fill="#ffffff" fill-opacity="0.07"/>
+      <circle cx="52" cy="158" r="14" fill="#9a8cff" fill-opacity="0.5"/>
+      <text x="52" y="163" text-anchor="middle" fill="#ffffff">4</text>
+      <rect x="78" y="152" width="170" height="12" rx="6" fill="#e8e5ff" fill-opacity="0.45"/>
+
+      <!-- confirmed badge -->
+      <g transform="translate(240 176)">
+        <rect width="150" height="40" rx="20" fill="#5ee0b0"/>
+        <path d="M20 21 L28 29 L42 13" transform="translate(0 -2)" fill="none" stroke="#0f2a22" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="54" y="26" fill="#0f2a22" font-size="15">Confirmed</text>
+      </g>
+    </g>
+  </g>
+</svg>

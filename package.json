@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "launch": "tsx scripts/launch.ts",
     "templates:sync": "tsx scripts/sync-templates.ts",
-    "webhook:test": "tsx scripts/test-webhook.ts"
+    "webhook:test": "tsx scripts/test-webhook.ts",
+    "e2e": "tsx scripts/e2e.ts"
   },
   "license": "MIT",
   "dependencies": {

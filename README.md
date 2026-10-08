@@ -1,19 +1,141 @@
+<p align="center">
+  <img src="docs/banner.svg" alt="Next.js waitlist with double opt-in, referrals and a bulk launch email" width="100%">
+</p>
+
 # Next.js Waitlist with Double Opt-In, Referrals and Launch Email (Mailtrap)
 
 A ready-to-deploy waitlist for your next launch, built with Next.js 15, TypeScript and Drizzle. Double opt-in keeps the list clean, referrals move people up the queue, and the launch announcement goes out on the Mailtrap Email API Bulk stream with one-click unsubscribe handled for you.
+
+<p>
+  <a href="https://github.com/Sid-Lais/nextjs-waitlist-double-opt-in/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Sid-Lais/nextjs-waitlist-double-opt-in/actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white">
+  <img alt="Drizzle ORM" src="https://img.shields.io/badge/Drizzle-SQLite-c5f74f">
+  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-5b4de0">
+</p>
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSid-Lais%2Fnextjs-waitlist-double-opt-in&env=APP_URL,DATABASE_URL,MAILTRAP_API_TOKEN,MAILTRAP_FROM_EMAIL,MAILTRAP_FROM_NAME,MAILTRAP_TEMPLATE_CONFIRM,MAILTRAP_TEMPLATE_WELCOME,MAILTRAP_TEMPLATE_MOVED_UP,MAILTRAP_TEMPLATE_LAUNCH,MAILTRAP_WEBHOOK_SECRET&envDescription=See%20.env.example%20for%20what%20each%20variable%20does&project-name=nextjs-waitlist-double-opt-in)
 
 SQLite does not persist on Vercel. Read [Deploying to Vercel](#deploying-to-vercel) before you click.
 
-## What it does
+**Contents:** [Features](#features) · [How it works](#how-it-works) · [Quick start](#quick-start) · [Configuration](#configuration) · [Transactional vs bulk](#transactional-vs-bulk) · [Launch email](#sending-the-launch-email) · [Webhooks](#webhooks) · [Referral queue](#referral-queue) · [Project structure](#project-structure) · [Tests](#tests) · [Deploying](#deploying-to-vercel) · [FAQ](#faq)
 
-- Landing page with an email form. Zod validation, honeypot field, per-IP rate limit, normalized email.
-- Signup is stored as pending with a hashed, single-use token (48 h). The confirmation email goes out on the Transactional stream.
-- `GET /confirm?token=` confirms the address, assigns a queue position and a referral code, and sends a welcome email.
-- When someone confirms through a referral link, the referrer moves up N places (default 3). They get a "you moved up" email, at most one per day.
-- `npm run launch` sends the launch announcement to confirmed users on the Bulk stream in batches of up to 500. It checks every message in the response and stores the sent state per user, so a rerun never emails anyone twice.
-- A webhook endpoint takes Mailtrap `unsubscribe`, `bounce` and `spam_complaint` events (deduped on `event_id`) and marks the user so later sends skip them.
+## Features
+
+| | |
+| --- | --- |
+| **Clean signups** | Zod validation, honeypot field, per-IP rate limit, normalized email. A duplicate signup re-sends the confirmation instead of creating a second record, and never twice within 60 s. |
+| **Double opt-in** | Signup is stored as pending with a hashed, single-use token (48 h). Nothing but the confirmation email is sent until the user clicks. |
+| **Referral queue** | Confirming gives a position and a referral code. When a referred user confirms, the referrer moves up N places and gets a "you moved up" email, at most one per day. |
+| **Bulk launch** | `npm run launch` sends through the Bulk stream in batches of up to 500, checks every message in the response and stores sent state per user, so reruns never email anyone twice. `--dry-run` prints counts and sends nothing. |
+| **Suppression** | Webhook for `unsubscribe`, `bounce` and `spam_complaint` events, deduped on `event_id`. Marked users are skipped by every later send. |
+| **Friendly failures** | An expired or reused link shows a page with a "send me a new link" button. |
+
+## How it works
+
+### Architecture
+
+```mermaid
+flowchart LR
+    visitor([Visitor]) --> page["Landing page<br/>/"]
+    page -->|POST| signupApi["/api/waitlist<br/>zod, honeypot, rate limit"]
+    inbox([User inbox]) -->|click link| confirmPage["/confirm?token="]
+    confirmPage --> core
+    signupApi --> core
+
+    subgraph app [Next.js app]
+        core["Waitlist service<br/>src/lib/waitlist.ts"]
+        resend["/api/waitlist/resend"] --> core
+        hook["/api/webhooks/mailtrap<br/>HMAC verified"]
+        cli["npm run launch<br/>src/lib/launch.ts"]
+        mailer["Mailer<br/>src/lib/mailer.ts"]
+        core --> mailer
+        cli --> mailer
+    end
+
+    core --> db[("SQLite<br/>Drizzle")]
+    hook --> db
+    cli --> db
+
+    mailer -->|"Transactional<br/>confirm, welcome, moved up"| tx["send.api.mailtrap.io"]
+    mailer -->|"Bulk batch send<br/>launch"| bulk["bulk.api.mailtrap.io"]
+    tx --> inbox
+    bulk --> inbox
+    events["Mailtrap events<br/>unsubscribe, bounce, spam"] -->|signed POST| hook
+```
+
+### Signup to welcome
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant A as Next.js app
+    participant D as SQLite
+    participant M as Mailtrap (Transactional)
+
+    U->>A: POST /api/waitlist {email, ref}
+    A->>A: validate, honeypot, rate limit, normalize
+    A->>D: insert pending user (or find existing)
+    alt no confirmation sent in the last 60 s
+        A->>D: store sha256(token), expires in 48 h
+        A->>M: confirmation template
+        M-->>U: email with /confirm?token=...
+    else duplicate inside 60 s
+        A-->>U: same 200 response, no email
+    end
+    U->>A: GET /confirm?token=...
+    A->>D: token valid, unused, not expired?
+    alt valid
+        A->>D: confirmed, next position, referral code
+        A->>D: credit referrer, shift positions
+        A->>M: welcome (position, referral link)
+        A->>M: "you moved up" to referrer (max 1 per day)
+        A-->>U: queue position page
+    else expired, used or unknown
+        A-->>U: friendly page with "send me a new link"
+    end
+```
+
+### Launch run
+
+```mermaid
+flowchart TD
+    start([npm run launch]) --> list["Load confirmed users by position"]
+    list --> filter{"Unsubscribed, bounced,<br/>spam or already sent?"}
+    filter -->|yes| skip[Skip and count]
+    filter -->|no| chunk["Chunk of at most 500"]
+    chunk --> dry{--dry-run?}
+    dry -->|yes| report([Print counts, send nothing])
+    dry -->|no| claim["Claim chunk in one transaction<br/>re-check suppression, mark sending"]
+    claim --> send["Bulk batch send"]
+    send --> result{Outcome}
+    result -->|"per-message success"| sent["mark sent + message id"]
+    result -->|"per-message error"| failed["mark failed + error<br/>retried next run"]
+    result -->|"HTTP 4xx"| failed
+    result -->|"timeout, 5xx, count mismatch"| unknown["leave sending, stop run<br/>skipped next run unless --retry-unknown"]
+    sent --> more{More chunks?}
+    failed --> more
+    more -->|yes| chunk
+    more -->|no| done([Print report])
+```
+
+### User states
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: signup
+    pending --> pending: duplicate signup, new link at most every 60 s
+    pending --> confirmed: valid token
+    confirmed --> sending: launch claims the chunk
+    sending --> sent: message accepted
+    sending --> failed: message rejected
+    failed --> sending: next run
+    confirmed --> suppressed: unsubscribe, bounce or spam event
+    sending --> suppressed: event
+    failed --> suppressed: event
+    sent --> [*]
+    suppressed --> [*]
+```
 
 ## Quick start
 
@@ -43,7 +165,7 @@ cp .env.example .env
 
 The database is created at `./data/waitlist.db` on first request.
 
-A Mailtrap demo domain only delivers to the account owner's own address. Use your own email while testing, or verify a real domain.
+A Mailtrap demo domain only delivers to the account owner's own address. Use your own email while testing, or verify a real domain. To keep everything away from real recipients, set `MAILTRAP_ACCOUNT_ID` and `MAILTRAP_TEST_INBOX_ID` and all mail goes to that Email Testing inbox instead.
 
 ## Configuration
 
@@ -56,6 +178,7 @@ A Mailtrap demo domain only delivers to the account owner's own address. Use you
 | `MAILTRAP_TEMPLATE_CONFIRM`, `_WELCOME`, `_MOVED_UP`, `_LAUNCH` | Template UUIDs from `templates:sync`. |
 | `MAILTRAP_WEBHOOK_SECRET` | Signing secret of the webhook that points at `/api/webhooks/mailtrap`. |
 | `REFERRAL_BUMP_PLACES` | Places a referrer moves up per confirmed referral. Default 3. |
+| `MAILTRAP_ACCOUNT_ID`, `MAILTRAP_TEST_INBOX_ID` | Optional. Send everything to an Email Testing inbox. The free plan allows about one email per 10 s, so sends are spaced out. |
 
 ## Transactional vs bulk
 
@@ -107,19 +230,68 @@ Positions are dense numbers 1..n among confirmed users, assigned in confirmation
 
 The confirmation link confirms on `GET`, as the flow requires. Some corporate mail scanners open links before the user does, which uses up the token. The "send me a new link" button on the error page covers that case.
 
-## Rate limiting and IPs
+## Project structure
 
-Signup and resend are limited to 5 requests per IP per 10 minutes, counted in the database. The IP comes from `x-forwarded-for`, which Vercel and most proxies set. If you run the app without a proxy in front, every request has no IP and shares one bucket.
+```text
+.
+├── docs/
+│   └── banner.svg               README banner
+├── drizzle/                     generated SQL migrations (applied on first connect)
+├── emails/                      HTML and text for the four Mailtrap templates
+│   ├── confirm.*  welcome.*  moved_up.*
+│   └── launch.*                 contains __unsubscribe_url__
+├── scripts/
+│   ├── launch.ts                npm run launch
+│   ├── sync-templates.ts        npm run templates:sync
+│   ├── test-webhook.ts          npm run webhook:test
+│   └── e2e.ts                   npm run e2e
+├── src/
+│   ├── app/
+│   │   ├── page.tsx             landing page and form
+│   │   ├── confirm/             GET /confirm and the friendly error page
+│   │   ├── check-email/         after "send me a new link"
+│   │   └── api/
+│   │       ├── waitlist/        POST signup, resend/ for the new-link button
+│   │       └── webhooks/mailtrap/
+│   └── lib/
+│       ├── waitlist.ts          signup, confirm, referral math, moved-up email
+│       ├── launch.ts            bulk launch, chunking, skip logic
+│       ├── mailer.ts            Mailtrap client, both streams, error classes
+│       ├── webhook.ts           signature check, dedupe, suppression
+│       ├── tokens.ts            token and referral code generation, hashing
+│       ├── validation.ts        zod schema, email normalization
+│       ├── rate-limit.ts        per-IP counter stored in the database
+│       ├── config.ts  context.ts
+│       └── db/                  Drizzle schema and connection
+├── tests/                       vitest suites
+└── .github/workflows/ci.yml     lint, typecheck, test, build
+```
+
+The services in `src/lib` take their database, mailer, clock and config as arguments. That is what lets the tests run against an in-memory database and a fake mailer, with no Mailtrap account.
 
 ## Tests
 
 ```bash
-npm test
+npm test            # unit tests, no credentials needed
 npm run lint
 npm run typecheck
 ```
 
-The email layer is replaced by a fake that records messages, so the tests run without Mailtrap credentials. They cover validation, duplicates and the 60 s window, token expiry and reuse, referral position math, the daily cap on "moved up" emails, launch skip logic and idempotency, and webhook signature and dedupe.
+The unit tests replace the email layer with a fake that records messages. They cover validation, duplicates and the 60 s window, token expiry and reuse, referral position math, the daily cap on "moved up" emails, launch skip logic and idempotency, stream selection and webhook signature and dedupe.
+
+### End-to-end
+
+`npm run e2e` drives a running app and the real Mailtrap API. Mail goes to an Email Testing inbox, so no real recipient is emailed. It signs users up, reads the confirmation links out of the inbox, confirms, checks the referral move and the emails sent, fires signed webhooks, runs `launch --dry-run`, `launch` and a second `launch`, and verifies nobody was emailed twice.
+
+```bash
+# .env needs MAILTRAP_ACCOUNT_ID, MAILTRAP_TEST_INBOX_ID and MAILTRAP_WEBHOOK_SECRET
+npm run build
+DATABASE_URL=./data/e2e.db APP_URL=http://localhost:3100 npx next start -p 3100
+# in a second terminal
+DATABASE_URL=./data/e2e.db APP_URL=http://localhost:3100 npm run e2e
+```
+
+The free sandbox plan limits sending to about one email per 10 s and rate-limits single messages inside a batch. The run therefore takes several minutes, and the launch step usually fails partly and is rerun until done. That doubles as a check that a partial failure never emails anyone twice. The sandbox also leaves `__unsubscribe_url__` as literal text, because only the live Bulk stream replaces it, so the unsubscribe link itself can only be checked with a verified sending domain. A full run uses about 20 of the 50 free sandbox messages per month.
 
 ## Deploying to Vercel
 
@@ -132,6 +304,8 @@ SQLite writes to local disk, and a Vercel function's disk is not persistent, so 
 For a quick demo on Vercel you can set `DATABASE_URL=/tmp/waitlist.db`, which works per instance but loses data.
 
 Set the webhook URL to your deployed domain and run `npm run launch` from your own machine with the production `DATABASE_URL`, or from a one-off job.
+
+The signup and resend limits read the client IP from `x-forwarded-for`, which Vercel and most proxies set. Behind no proxy, every request shares one bucket.
 
 ## FAQ
 
