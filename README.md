@@ -96,47 +96,6 @@ sequenceDiagram
     end
 ```
 
-### Launch run
-
-```mermaid
-flowchart TD
-    start([npm run launch]) --> list["Load confirmed users by position"]
-    list --> filter{"Unsubscribed, bounced,<br/>spam or already sent?"}
-    filter -->|yes| skip[Skip and count]
-    filter -->|no| chunk["Chunk of at most 500"]
-    chunk --> dry{--dry-run?}
-    dry -->|yes| report([Print counts, send nothing])
-    dry -->|no| claim["Claim chunk in one transaction<br/>re-check suppression, mark sending"]
-    claim --> send["Bulk batch send"]
-    send --> result{Outcome}
-    result -->|"per-message success"| sent["mark sent + message id"]
-    result -->|"per-message error"| failed["mark failed + error<br/>retried next run"]
-    result -->|"HTTP 4xx"| failed
-    result -->|"timeout, 5xx, count mismatch"| unknown["leave sending, stop run<br/>skipped next run unless --retry-unknown"]
-    sent --> more{More chunks?}
-    failed --> more
-    more -->|yes| chunk
-    more -->|no| done([Print report])
-```
-
-### User states
-
-```mermaid
-stateDiagram-v2
-    [*] --> pending: signup
-    pending --> pending: duplicate signup, new link at most every 60 s
-    pending --> confirmed: valid token
-    confirmed --> sending: launch claims the chunk
-    sending --> sent: message accepted
-    sending --> failed: message rejected
-    failed --> sending: next run
-    confirmed --> suppressed: unsubscribe, bounce or spam event
-    sending --> suppressed: event
-    failed --> suppressed: event
-    sent --> [*]
-    suppressed --> [*]
-```
-
 ## Quick start
 
 You need Node.js 20+ and a [Mailtrap](https://mailtrap.io) account with a verified sending domain.
@@ -327,4 +286,4 @@ Put `__unsubscribe_url__` in the bulk template so Mailtrap adds the unsubscribe 
 
 ## License
 
-MIT
+[MIT](LICENSE)
