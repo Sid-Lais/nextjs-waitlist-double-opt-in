@@ -35,36 +35,30 @@ SQLite does not persist on Vercel. Read [Deploying to Vercel](#deploying-to-verc
 
 ### Architecture
 
+The app is a single Next.js project. Visitors use the web pages, the owner runs the launch from the command line, and Mailtrap sits on the other side for both sending and events. Everything is stored in one SQLite database.
+
 ```mermaid
-flowchart LR
-    visitor([Visitor]) --> page["Landing page<br/>/"]
-    page -->|POST| signupApi["/api/waitlist<br/>zod, honeypot, rate limit"]
-    inbox([User inbox]) -->|click link| confirmPage["/confirm?token="]
-    confirmPage --> core
-    signupApi --> core
-
-    subgraph app [Next.js app]
-        core["Waitlist service<br/>src/lib/waitlist.ts"]
-        resend["/api/waitlist/resend"] --> core
-        hook["/api/webhooks/mailtrap<br/>HMAC verified"]
-        cli["npm run launch<br/>src/lib/launch.ts"]
-        mailer["Mailer<br/>src/lib/mailer.ts"]
-        core --> mailer
-        cli --> mailer
-    end
-
-    core --> db[("SQLite<br/>Drizzle")]
-    hook --> db
-    cli --> db
-
-    mailer -->|"Transactional<br/>confirm, welcome, moved up"| tx["send.api.mailtrap.io"]
-    mailer -->|"Bulk batch send<br/>launch"| bulk["bulk.api.mailtrap.io"]
-    tx --> inbox
-    bulk --> inbox
-    events["Mailtrap events<br/>unsubscribe, bounce, spam"] -->|signed POST| hook
+flowchart TB
+    user([Visitor]) -->|signup, confirm| web["Next.js app<br/>pages and API routes"]
+    owner([You]) -->|npm run launch| web
+    web <--> db[("SQLite")]
+    web -->|"confirm, welcome, moved up"| tx["Mailtrap<br/>Transactional stream"]
+    web -->|"launch email"| bulk["Mailtrap<br/>Bulk stream"]
+    events["Mailtrap events"] -->|"unsubscribe, bounce, spam"| web
 ```
 
+| Part | What it does | Where |
+| --- | --- | --- |
+| Pages and API | Signup form, confirmation page, resend button | `src/app` |
+| Waitlist service | Tokens, queue positions, referrals, moved-up emails | `src/lib/waitlist.ts` |
+| Launch | Batches of up to 500 on the Bulk stream, per-user sent state | `src/lib/launch.ts` |
+| Mailer | The only code that talks to Mailtrap | `src/lib/mailer.ts` |
+| Webhook | Verifies the signature and marks unsubscribed, bounced and spam users | `src/lib/webhook.ts` |
+| Database | Users, webhook event ids, rate limit counters | `src/lib/db` |
+
 ### Signup to welcome
+
+This is the double opt-in path. A signup stays pending and gets only the confirmation email. The user is confirmed, queued and welcomed only after opening the link.
 
 ```mermaid
 sequenceDiagram
