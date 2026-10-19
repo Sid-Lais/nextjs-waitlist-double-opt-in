@@ -67,7 +67,7 @@ export function WaitlistForm({ refCode }: { refCode?: string }) {
           </label>
         </div>
         <button type="submit" disabled={state.kind === "busy"}>
-          {state.kind === "busy" ? "Joining..." : "Join the waitlist"}
+          {state.kind === "busy" ? "Taking your number..." : "Take a number"}
         </button>
       </form>
       <p className={`msg ${state.kind === "error" ? "err" : ""}`} role="status">

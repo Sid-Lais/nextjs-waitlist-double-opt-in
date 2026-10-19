@@ -2,7 +2,7 @@ import { brandName } from "@/lib/brand";
 import { getConfig } from "@/lib/config";
 import { getDb } from "@/lib/db";
 import { confirmedCount } from "@/lib/waitlist";
-import { Ticket } from "./ticket";
+import { QueueMachine } from "./queue-machine";
 import { WaitlistForm } from "./waitlist-form";
 
 // The queue length changes with every confirmation.
@@ -19,44 +19,24 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
       <section>
         <h1>{name ? `Get early access to ${name}.` : "Get early access."}</h1>
         <p className="lead">
-          Join the waitlist and confirm your email to claim your place. Share your link, and every
-          friend who joins moves you up the line.
+          Join the waitlist and confirm your email to take your number. Share your link and jump{" "}
+          {bump} places for every friend who confirms.
         </p>
         <WaitlistForm refCode={typeof ref === "string" ? ref : undefined} />
-        {inLine > 0 && (
-          <p className="in-line">
-            <span className="pulse" aria-hidden="true" />
-            {inLine.toLocaleString("en-US")} {inLine === 1 ? "person is" : "people are"} already in
-            line
-          </p>
-        )}
         <p className="fine">We only email you about the launch. Unsubscribe any time.</p>
       </section>
-
-      <Ticket
-        tilted
-        top={
+      <QueueMachine
+        name={name}
+        inLine={inLine}
+        yourNumber={inLine + 1}
+        yourLabel="Your number"
+        ticketNote="Serving starts at launch"
+        ticketFoot={
           <>
-            <div className="t-label">
-              <span>{name ? `${name} early access` : "Early access"}</span>
-              <span>Admit one</span>
-            </div>
-            <div className="t-num">#{(inLine + 1).toLocaleString("en-US")}</div>
-            <div className="t-cap">Your place once you confirm</div>
+            Confirm in <strong>48h</strong>
           </>
         }
-        bottom={
-          <>
-            Move up {bump} places for every friend who confirms.
-            <div className="segments" aria-hidden="true">
-              <span className="on" />
-              <span className="on" />
-              <span />
-              <span />
-              <span />
-            </div>
-          </>
-        }
+        bump={bump}
       />
     </div>
   );

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Schibsted_Grotesk } from "next/font/google";
+import { DM_Mono, DM_Sans, Doto } from "next/font/google";
 import "./globals.css";
 
-const sans = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-sans" });
-const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["500"], variable: "--font-mono" });
+const sans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
+const mono = DM_Mono({ subsets: ["latin"], weight: ["500"], variable: "--font-mono" });
+const led = Doto({ subsets: ["latin"], weight: ["900"], variable: "--font-led" });
 
 export const metadata: Metadata = {
   title: "Join the waitlist",
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+    <html lang="en" className={`${sans.variable} ${mono.variable} ${led.variable}`}>
       <body>
         <main>{children}</main>
       </body>
