@@ -1,4 +1,4 @@
-import { and, eq, gte, lt, max, sql } from "drizzle-orm";
+import { and, count, eq, gte, lt, max, sql } from "drizzle-orm";
 import type { Db } from "./db";
 import { users } from "./db/schema";
 import { baseVariables, type Config } from "./config";
@@ -25,6 +25,16 @@ export function isSuppressed(u: Pick<User, "unsubscribedAt" | "bouncedAt" | "spa
 
 export function referralUrl(ctx: Ctx, code: string): string {
   return `${ctx.config.appUrl}/?ref=${code}`;
+}
+
+/** Number of confirmed users, which is the length of the queue. */
+export function confirmedCount(db: Db): number {
+  return db.select({ n: count() }).from(users).where(eq(users.status, "confirmed")).get()?.n ?? 0;
+}
+
+/** Where a user at `position` ends up after `friends` confirmed referrals. Never above #1. */
+export function positionAfterReferrals(position: number, friends: number, bump: number): number {
+  return Math.max(1, position - friends * bump);
 }
 
 /** Stores a fresh token and sends the confirmation, unless one went out in the last 60 s. */

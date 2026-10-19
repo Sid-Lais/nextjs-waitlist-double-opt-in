@@ -3,26 +3,25 @@
 import { useState } from "react";
 
 export function WaitlistForm({ refCode }: { refCode?: string }) {
-  const [state, setState] = useState<{ kind: "idle" | "busy" | "done" | "error"; text?: string }>({
-    kind: "idle",
-  });
+  const [state, setState] = useState<{
+    kind: "idle" | "busy" | "done" | "error";
+    text?: string;
+    email?: string;
+  }>({ kind: "idle" });
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
+    const email = String(data.get("email") ?? "").trim();
     setState({ kind: "busy" });
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          email: data.get("email"),
-          website: data.get("website"),
-          ref: refCode,
-        }),
+        body: JSON.stringify({ email, website: data.get("website"), ref: refCode }),
       });
       const body = await res.json().catch(() => ({}));
-      if (res.ok) setState({ kind: "done" });
+      if (res.ok) setState({ kind: "done", email });
       else setState({ kind: "error", text: body.error ?? "Something went wrong, try again" });
     } catch {
       setState({ kind: "error", text: "Network error, try again" });
@@ -31,15 +30,28 @@ export function WaitlistForm({ refCode }: { refCode?: string }) {
 
   if (state.kind === "done") {
     return (
-      <p className="msg">
-        Check your inbox and click the link to confirm your spot. It expires in 48 hours.
-      </p>
+      <div className="sent" role="status">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="m3.5 7 8.5 6 8.5-6" />
+        </svg>
+        <div>
+          <b>Check your inbox.</b>
+          <p>
+            Click the link we sent to <strong>{state.email}</strong> to confirm your place. It
+            expires in 48 hours.
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
     <>
-      <form onSubmit={onSubmit} noValidate>
+      {refCode && (
+        <p className="invite">You were invited by a friend. Confirming moves them up the line.</p>
+      )}
+      <form className="join-form" onSubmit={onSubmit} noValidate>
         <input
           type="email"
           name="email"
