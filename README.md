@@ -40,10 +40,10 @@ A complete Next.js waitlist that handles each of those problems, ready to deploy
 ## Demo
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Joining the waitlist: enter an email, open the confirmation email, click the link, and see the queue position and referral link" width="400">
+  <img src="docs/demo.gif" alt="Joining the waitlist: enter an email and take a number, open the confirmation email, click the link, and see your number on the queue machine with a referral link" width="720">
 </p>
 
-Joining the waitlist: enter your email, confirm it from your inbox, and get a queue position with a referral link to share. Recorded from a local run. The emails are this repo's own templates in [`emails/`](emails), captured by a test mailer instead of being sent through Mailtrap.
+Joining the waitlist: take a number with your email, confirm it from your inbox, and the queue machine prints your place in line next to a referral link to share. Recorded from a local run of this code. The emails are this repo's own templates in [`emails/`](emails), captured by a test mailer instead of being sent through Mailtrap.
 
 ## How it works
 
@@ -158,10 +158,10 @@ Next.js prints one line per request, and the scripts print a short summary.
 ## Screenshots
 
 <p align="center">
-  <img src="docs/demo-landing.png" alt="Landing page with the email form and Join the waitlist button" width="400">
-  <img src="docs/demo-confirmed.png" alt="Confirmation page showing the queue position and the referral link" width="400">
+  <img src="docs/demo-landing.png" alt="Landing page with the email form, the Take a number button, and a queue machine showing how many people are in line and your number" width="400">
+  <img src="docs/demo-confirmed.png" alt="Confirmed page: your number on the queue machine, the referral link with a Copy link button, and where 1, 2 or 3 friends move you" width="400">
 </p>
-<p align="center">Join with an email, then confirm to get a position and a referral link.</p>
+<p align="center">Take a number with your email, then confirm to lock in your place and get a referral link.</p>
 
 <p align="center">
   <img src="docs/demo-link-used.png" alt="Page saying the confirmation link was already used, with a Send me a new link button" width="400">
