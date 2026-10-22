@@ -4,7 +4,7 @@
 
 # Next.js Waitlist with Double Opt-In, Referrals and Launch Email (Mailtrap)
 
-A ready-to-deploy waitlist for your next launch, built with Next.js 15, TypeScript and Drizzle. Double opt-in keeps the list clean, referrals move people up the queue, and the launch announcement goes out on the Mailtrap Email API Bulk stream with one-click unsubscribe handled for you.
+A ready-to-deploy waitlist for your next launch, built with Next.js 15, TypeScript and Drizzle. Double opt-in keeps the list clean, referrals move people up the queue, and the launch announcement goes out on the Mailtrap Email API Bulk stream with one-click unsubscribe handled for you. Use it as a Next.js waitlist template or starter for a pre-launch email list: email confirmation, a referral queue, a bulk launch email and unsubscribe, bounce and spam-complaint handling, all through the Mailtrap Email API (transactional and bulk sending).
 
 <p>
   <a href="https://github.com/Sid-Lais/nextjs-waitlist-double-opt-in/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Sid-Lais/nextjs-waitlist-double-opt-in/actions/workflows/ci.yml/badge.svg"></a>
@@ -101,7 +101,7 @@ This is the double opt-in path. A signup stays pending and gets only the confirm
 | App        | Next.js 15 (App Router), React 19, TypeScript                                                                                           |
 | Data       | Drizzle ORM, SQLite (better-sqlite3)                                                                                                    |
 | Validation | Zod                                                                                                                                     |
-| Email      | [`mailtrap`](https://github.com/railsware/mailtrap-nodejs) Node.js SDK: Transactional and Bulk streams, templates, batch send, webhooks |
+| Email      | [`mailtrap`](https://github.com/railsware/mailtrap-nodejs) Node.js SDK (the official Mailtrap SDK for Node.js): Transactional and Bulk streams, templates, batch send, webhooks |
 | Tooling    | Vitest, ESLint, Prettier, GitHub Actions                                                                                                |
 
 ## Prerequisites
@@ -372,6 +372,22 @@ Transactional email is one message triggered by an action, such as a confirmatio
 ### How do I handle unsubscribes and bounces from a launch email?
 
 Put `__unsubscribe_url__` in the bulk template so Mailtrap adds the unsubscribe link and headers, then receive Mailtrap's `unsubscribe`, `bounce` and `spam` webhook events. This repo marks the user and every later send skips them.
+
+### How do I build a Next.js waitlist with referrals?
+
+Give every confirmed signup a unique referral code and link, store who referred whom, and move the referrer up the queue only when the referred person confirms their email, not when they sign up. This repo does that with a position and referral code per confirmed user, an N-place jump for the referrer and at most one "you moved up" email a day. See [Referral queue](#referral-queue).
+
+### Can I use Mailtrap instead of Resend for a Next.js waitlist?
+
+Yes. Many Next.js waitlist templates use Resend. This one sends the confirmation and welcome emails on Mailtrap's Transactional stream and the launch announcement on its Bulk stream, using the official `mailtrap` Node.js SDK. The double opt-in, referral and suppression logic doesn't depend on the provider, and email sending is in one module.
+
+### How do I stop fake signups and bots on a waitlist?
+
+Use double opt-in so only addresses that click the confirmation link count, add a honeypot field and a per-IP rate limit, and normalize emails so one address can't sign up twice. All three are in this repo. See [Security design](#security-design).
+
+### Why use a Postgres database instead of SQLite on Vercel?
+
+A Vercel function's disk isn't persistent, so SQLite signups would vanish between invocations. See [Deploying to Vercel](#deploying-to-vercel) for the Drizzle changes to move to Postgres, for example Neon.
 
 ## License
 
