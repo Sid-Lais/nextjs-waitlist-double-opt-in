@@ -96,13 +96,13 @@ This is the double opt-in path. A signup stays pending and gets only the confirm
 
 ## Stack
 
-|            |                                                                                                                                         |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| App        | Next.js 15 (App Router), React 19, TypeScript                                                                                           |
-| Data       | Drizzle ORM, SQLite (better-sqlite3)                                                                                                    |
-| Validation | Zod                                                                                                                                     |
+|            |                                                                                                                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App        | Next.js 15 (App Router), React 19, TypeScript                                                                                                                                   |
+| Data       | Drizzle ORM, SQLite (better-sqlite3)                                                                                                                                            |
+| Validation | Zod                                                                                                                                                                             |
 | Email      | [`mailtrap`](https://github.com/railsware/mailtrap-nodejs) Node.js SDK (the official Mailtrap SDK for Node.js): Transactional and Bulk streams, templates, batch send, webhooks |
-| Tooling    | Vitest, ESLint, Prettier, GitHub Actions                                                                                                |
+| Tooling    | Vitest, ESLint, Prettier, GitHub Actions                                                                                                                                        |
 
 ## Prerequisites
 
