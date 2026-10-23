@@ -16,7 +16,8 @@
     "templates:sync": "tsx scripts/sync-templates.ts",
     "webhook:test": "tsx scripts/test-webhook.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "audit:deps": "npm audit --omit=dev --audit-level=critical"
   },
   "license": "MIT",
   "dependencies": {
