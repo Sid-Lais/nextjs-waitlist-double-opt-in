@@ -35,7 +35,7 @@ A complete Next.js waitlist that handles each of those problems, ready to deploy
 | Sending the launch twice after a failure  | Sent state is stored per user, so a rerun only retries what failed                                          |
 | Expired or already used links             | A clear page with a "Send me a new link" button                                                             |
 
-**Contents:** [Demo](#demo) · [How it works](#how-it-works) · [Features](#features) · [Stack](#stack) · [Prerequisites](#prerequisites) · [Mailtrap setup](#mailtrap-setup) · [Quick start](#quick-start) · [Screenshots](#screenshots) · [Key integration points](#key-integration-points) · [Failure behavior](#failure-behavior) · [Security design](#security-design) · [Configuration](#configuration) · [Tests](#tests) · [Deploying](#deploying-to-vercel) · [FAQ](#faq)
+**Contents:** [Demo](#demo) · [How it works](#how-it-works) · [Features](#features) · [Stack](#stack) · [Prerequisites](#prerequisites) · [Mailtrap setup](#mailtrap-setup) · [Quick start](#quick-start) · [Screenshots](#screenshots) · [Key integration points](#key-integration-points) · [Failure behavior](#failure-behavior) · [Security design](#security-design) · [Configuration](#configuration) · [Tests](#tests) · [Deploying](#deploying-to-vercel) · [FAQ](#faq) · [Contributing](#contributing)
 
 ## Demo
 
@@ -388,6 +388,10 @@ Use double opt-in so only addresses that click the confirmation link count, add 
 ### Why use a Postgres database instead of SQLite on Vercel?
 
 A Vercel function's disk isn't persistent, so SQLite signups would vanish between invocations. See [Deploying to Vercel](#deploying-to-vercel) for the Drizzle changes to move to Postgres, for example Neon.
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up the project, run the checks and open a pull request.
 
 ## License
 
