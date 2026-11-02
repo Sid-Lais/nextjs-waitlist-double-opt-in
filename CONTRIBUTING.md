@@ -22,13 +22,14 @@ If you want to work on something that has no issue yet, open one first and descr
 You need Node.js 20 or newer.
 
 ```bash
-git clone https://github.com/<your-username>/nextjs-waitlist-double-opt-in.git && cd nextjs-waitlist-double-opt-in
-npm install
-cp .env.example .env          # set MAILTRAP_API_TOKEN and MAILTRAP_FROM_EMAIL
-npm run templates:sync        # creates the 4 email templates and prints their IDs for .env
+git clone https://github.com/Sid-Lais/nextjs-waitlist-double-opt-in.git && cd nextjs-waitlist-double-opt-in
+npm ci
+cp .env.example .env
 ```
 
-**The tests need no credentials**, because the email layer is replaced by a fake.
+`npm ci` installs exactly the versions in `package-lock.json`, the same way CI does.
+
+**The tests and `npm run dev` need no credentials**, because the tests replace the email layer with a fake. To send real email you need a Mailtrap account: fill in `MAILTRAP_API_TOKEN` and `MAILTRAP_FROM_EMAIL` in `.env`, then run `npm run templates:sync` once to create the four email templates and print their IDs for `.env`.
 
 ## Run it
 
@@ -36,7 +37,7 @@ npm run templates:sync        # creates the 4 email templates and prints their I
 npm run dev
 ```
 
-Open http://localhost:3000. The SQLite database is created at `./data/waitlist.db` on the first request. To try the webhook locally without a tunnel, run `npm run webhook:test -- someone@example.com unsubscribe`.
+Open http://localhost:3000. The SQLite database is created at `./data/waitlist.db` on the first request. To try the webhook locally without a tunnel, set `MAILTRAP_WEBHOOK_SECRET` in `.env` and run `npm run webhook:test -- someone@example.com unsubscribe` while `npm run dev` is running.
 
 ## Tests and checks
 
@@ -55,7 +56,7 @@ Please add or update tests for the behavior you change, and run all the checks a
 
 ## Making your change
 
-1. Fork the repository and create a branch from `main`. Use a short name that says what it does, such as `fix/expired-code-message`, `feature/dark-theme` or `docs/readme-typo`.
+1. Fork the repository on GitHub and create a branch from `main` in your fork, because you cannot push to this repository directly. Use a short name that says what it does, such as `fix/expired-code-message`, `feature/dark-theme` or `docs/readme-typo`.
 2. Keep each pull request focused on one change. Don't mix refactoring or formatting changes into it.
 3. Write commit messages as a short, imperative summary of what changed (for example `Fix wrong time in reminder email`), and add a few lines of explanation if the reason isn't obvious.
 4. Push your branch and open a pull request against `main`.
